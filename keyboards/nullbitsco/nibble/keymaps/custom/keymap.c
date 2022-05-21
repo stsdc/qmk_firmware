@@ -15,13 +15,16 @@
  */
 #include QMK_KEYBOARD_H
 
+#include "oled_display.h"
+
+
 enum layer_names {
   _MA,
   _FN
 };
 
 enum custom_keycodes {
-  KC_CUST = SAFE_RANGE,
+    KC_CUST = SAFE_RANGE,
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -42,38 +45,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 };
 
-bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-  // Send keystrokes to host keyboard, if connected (see readme)
-  process_record_remote_kb(keycode, record);
-  switch(keycode) {
-    case KC_CUST: //custom macro
-      if (record->event.pressed) {
-      }
-    break;
-
-    case RM_1: //remote macro 1
-      if (record->event.pressed) {
-      }
-    break;
-
-    case RM_2: //remote macro 2
-      if (record->event.pressed) {
-      }
-    break;
-
-    case RM_3: //remote macro 3
-      if (record->event.pressed) {
-      }
-    break;
-
-    case RM_4: //remote macro 4
-      if (record->event.pressed) {
-      }
-    break;
-
-  }
-return true;
-}
 
 // RGB config, for changing RGB settings on non-VIA firmwares
 void change_RGB(bool clockwise) {
@@ -105,20 +76,7 @@ void change_RGB(bool clockwise) {
     }
 }
 
-bool encoder_update_user(uint8_t index, bool clockwise) {
-  if (layer_state_is(1)) {
-    //change RGB settings
-    change_RGB(clockwise);
-  }
-  else {
-    if (clockwise) {
-      tap_code(KC_VOLU);
-  } else {
-      tap_code(KC_VOLD);
-    }
-  }
-    return true;
-}
+
 
 void matrix_init_user(void) {
   // Initialize remote keyboard, if connected (see readme)
@@ -128,4 +86,35 @@ void matrix_init_user(void) {
 void matrix_scan_user(void) {
   // Scan and parse keystrokes from remote keyboard, if connected (see readme)
   matrix_scan_remote_kb();
+}
+
+oled_rotation_t oled_init_user(oled_rotation_t rotation) {
+    oled_timer = timer_read32();
+    set_oled_mode(OLED_MODE_IDLE);
+    return OLED_ROTATION_180;
+}
+
+bool oled_task_user(void) {
+    if (timer_elapsed(oled_timer) >= 3000) {
+        set_oled_mode(OLED_MODE_IDLE);
+    }
+    render_frame();
+    return false;
+}
+
+bool encoder_update_user(uint8_t index, bool clockwise) {
+  if (layer_state_is(1)) {
+    //change RGB settings
+    change_RGB(clockwise);
+  }
+  else {
+    if (clockwise) {
+      tap_code(KC_VOLU);
+      process_record_encoder_oled(KC_VOLU);
+  } else {
+      tap_code(KC_VOLD);
+      process_record_encoder_oled(KC_VOLD);
+    }
+  }
+    return true;
 }
