@@ -26,7 +26,7 @@ static const char PROGMEM oled_mode_messages[5][15] = {
 
 static const char PROGMEM oled_mode_icons[5][3][5] = {
     {{128,129,130,131,0},{160,161,162,163,0},{192,193,194,195,0}},
-    {{132,133,134,135,0},{164,165,166,167,0},{196,197,198,199,0}},
+    {{132,133,134,135,0},{164,165,166,167,0},{196,197,198,199,0}}, // pause
     {{136,137,138,139,0},{168,169,170,171,0},{200,201,202,203,0}},
     {{140,141,142,143,0},{172,173,174,175,0},{204,205,206,207,0}},
     {{144,145,146,147,0},{176,177,178,179,0},{208,209,210,211,0}}
@@ -60,36 +60,18 @@ void process_record_keymap_oled(uint16_t keycode) {
     }
 }
 
-void render_wpm(void) {
-    uint8_t n = get_current_wpm();
-    char wpm_counter[4];
-    wpm_counter[3] = '\0';
-    wpm_counter[2] = '0' + n % 10;
-    wpm_counter[1] = '0' + (n /= 10) % 10;
-    wpm_counter[0] = '0' + n / 10 ;
-    oled_write_P(PSTR("                 "), false);
-    oled_write(wpm_counter, false);
-}
-
 void render_idle(void) {
     // Host Keyboard LED Status
     led_t led_state = host_keyboard_led_state();
 
     // Printing logo, state
-    oled_write_P(oled_mode_icons[0][0], false);
-    oled_write_P(PSTR("        "), false);
-    oled_write_P(led_state.scroll_lock ? PSTR("S ") : PSTR("  "), false);
-    oled_write_P(led_state.num_lock ? PSTR("N ") : PSTR("  "), false);
-    oled_write_P(led_state.caps_lock ? PSTR("C ") : PSTR("  "), false);
-    oled_write_P(PSTR("\n"), false);
-    oled_write_P(oled_mode_icons[0][1], false);
-    oled_write_P(PSTR("  Nibble"), false);
-    oled_write_P(PSTR("\n"), false);
-    oled_write_P(oled_mode_icons[0][2], false);
-    oled_write_P(PSTR("\n"), false);
+    // oled_write_P(oled_mode_icons[0][4], false);
+    // oled_write_P(PSTR("        "), false);
+    
+    // oled_write_P(led_state.scroll_lock ? PSTR("SCROLL LOCK") : PSTR("           "), false);
+    // oled_write_P(led_state.num_lock ? PSTR("NUM LOCK") : PSTR("         "), false);
+    oled_write_ln(led_state.caps_lock ? PSTR("CAPS LOCK") : PSTR("         "), false);
 
-    // Printing WPM
-    render_wpm();
 }
 
 void render_status_mode_message(void) {
