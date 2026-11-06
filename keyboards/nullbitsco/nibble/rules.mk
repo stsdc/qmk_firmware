@@ -1,5 +1,4 @@
-# MCU name
-MCU = atmega32u4
+CUSTOM_MATRIX = lite
 
 # Bootloader selection
 BOOTLOADER = caterina
@@ -19,10 +18,10 @@ AUDIO_ENABLE = no           # Audio output
 ENCODER_ENABLE = yes        # Use rotary encoder
 LTO_ENABLE = yes            # Link-time optimization
 CUSTOM_MATRIX = lite        # Lite custom matrix
+UART_DRIVER_REQUIRED = yes  # UART driver required
 
 # Project specific files
 SRC += matrix.c \
        common/bitc_led.c \
        big_led.c \
        common/remote_kb.c
-QUANTUM_LIB_SRC += uart.c
