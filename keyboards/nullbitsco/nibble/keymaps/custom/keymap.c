@@ -96,9 +96,18 @@ void matrix_scan_user(void) {
 oled_rotation_t oled_init_user(oled_rotation_t rotation) { return OLED_ROTATION_180; }
 
 
+// 5x8 Caps Lock icon: up arrow with an underscore beneath it
+static const char PROGMEM caps_lock_icon[] = {0x44, 0x42, 0x7F, 0x42, 0x44};
+static const char PROGMEM caps_lock_blank[] = {0x00, 0x00, 0x00, 0x00, 0x00};
+
 bool oled_task_user(void) {
     render_anim();
-    oled_set_cursor(0, 14);
+
+    // Caps Lock indicator in the empty top-left area of the animation
+    led_t led_state = host_keyboard_led_state();
+    oled_set_cursor(0, 0);
+    oled_write_raw_P(led_state.caps_lock ? caps_lock_icon : caps_lock_blank, sizeof(caps_lock_icon));
+
     return false;
 }
 
