@@ -4,4 +4,5 @@ WPM_ENABLE = yes
 
 ifeq ($(strip $(OLED_ENABLE)), yes)
     SRC += oled_display.c
+    SRC += animation_bongo.c
 endif

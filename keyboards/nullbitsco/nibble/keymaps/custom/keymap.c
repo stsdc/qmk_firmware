@@ -16,7 +16,8 @@
 #include QMK_KEYBOARD_H
 
 #include "oled_display.h"
-#include "animation_frames.h"
+// #include "animation_frames.h"
+#include "animation_bongo.h"
 
 #define IDLE_FRAME_DURATION 200 // Idle animation iteration rate in ms
 
@@ -39,7 +40,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_LCTL, KC_LCTL, KC_LGUI, KC_LALT,                   KC_SPC,                    MO(_FN), KC_RALT, KC_RCTL, KC_LEFT,          KC_DOWN, KC_RGHT
   ),
   [_FN] = LAYOUT_ansi(
-             QK_BOOT,   KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12, _______,  _______,
+             QK_REBOOT,   KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,  KC_F10,  KC_F11,  KC_F12, _______,  _______,
     UG_TOGG, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,  KC_END ,
     _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,          _______, _______,
     _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,          _______, _______,
@@ -91,84 +92,11 @@ void matrix_scan_user(void) {
   matrix_scan_remote_kb();
 }
 
-// oled_rotation_t oled_init_user(oled_rotation_t rotation) {
-//     oled_timer = timer_read32();
-//     set_oled_mode(OLED_MODE_IDLE);
-//     return OLED_ROTATION_180;
-// }
+// Horizontal 128x32 OLED (use OLED_ROTATION_180 if the image is upside down)
+oled_rotation_t oled_init_user(oled_rotation_t rotation) { return OLED_ROTATION_180; }
 
-oled_rotation_t oled_init_user(oled_rotation_t rotation) { return OLED_ROTATION_90; }
-
-
-uint32_t anim_timer         = 0;
-uint32_t anim_sleep         = 0;
-uint8_t  current_idle_frame = 0;
-
-bool tap_anim        = false;
-bool tap_anim_toggle = false;
-
-// Decompress and write a precompressed bitmap frame to the OLED.
-// Documentation and python compression script available at:
-// https://github.com/nullbitsco/squeez-o
-static void oled_write_compressed_P(const char* input_block_map, const char* input_block_list) {
-    uint16_t block_index = 0;
-    for (uint16_t i=0; i<NUM_OLED_BYTES; i++) {
-        uint8_t bit = i%8;
-        uint8_t map_index = i/8;
-        uint8_t _block_map = (uint8_t)pgm_read_byte_near(input_block_map + map_index);
-        uint8_t nonzero_byte = (_block_map & (1 << bit));
-        if (nonzero_byte) {
-            const char data = (const char)pgm_read_byte_near(input_block_list + block_index++);
-            oled_write_raw_byte(data, i);
-        } else {
-            const char data = (const char)0x00;
-            oled_write_raw_byte(data, i);
-        }
-    }
-}
-
-
-static void render_anim(void) {
-    // Idle animation
-    void animation_phase(void) {
-        if (!tap_anim) {
-            current_idle_frame = (current_idle_frame + 1) % NUM_IDLE_FRAMES;
-            uint8_t idx = abs((NUM_IDLE_FRAMES - 1) - current_idle_frame);
-            #ifdef USE_OLED_BITMAP_COMPRESSION
-            oled_write_compressed_P(idle_block_map[idx], idle_frames[idx]);
-            #else
-            oled_write_raw_P(idle_frames[idx], NUM_OLED_BYTES);
-            #endif
-        }
-    }
-
-    // Idle behaviour
-    if (get_current_wpm() != 000) {  // prevent sleep
-        oled_on();
-        if (timer_elapsed32(anim_timer) > IDLE_FRAME_DURATION) {
-            anim_timer = timer_read32();
-            animation_phase();
-        }
-        anim_sleep = timer_read32();
-    } else {  // Turn off screen when timer threshold elapsed or reset time since last input
-        if (timer_elapsed32(anim_sleep) > OLED_TIMEOUT) {
-            oled_off();
-        } else {
-            if (timer_elapsed32(anim_timer) > IDLE_FRAME_DURATION) {
-                anim_timer = timer_read32();
-                animation_phase();
-            }
-        }
-    }
-}
 
 bool oled_task_user(void) {
-    // if (timer_elapsed(oled_timer) >= 3000) {
-    //     set_oled_mode(OLED_MODE_IDLE);
-    // }
-    // render_frame();
-    // return false;
-
     render_anim();
     oled_set_cursor(0, 14);
     return false;
@@ -198,13 +126,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     // Check if non-mod
     if ((keycode >= KC_A && keycode <= KC_0) || (keycode >= KC_TAB && keycode <= KC_SLASH)) {
         if (record->event.pressed) {
-            // Display tap frames
-            tap_anim_toggle = !tap_anim_toggle;
-            // #ifdef USE_OLED_BITMAP_COMPRESSION
-            oled_write_compressed_P(tap_block_map[tap_anim_toggle], tap_frames[tap_anim_toggle]);
-            // #else
-            // oled_write_raw_P(tap_frames[tap_anim_toggle], NUM_OLED_BYTES);
-            // #endif
+            // Trigger the tap frame immediately instead of waiting for WPM to update
+            animation_trigger_tap();
         }
     }
   return true;
